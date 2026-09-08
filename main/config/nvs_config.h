@@ -16,13 +16,19 @@ typedef enum {
     APP_MODE_RADIO,
 } app_mode_t;
 
+typedef enum {
+    TRIGGER_ABOVE = 0,
+    TRIGGER_BELOW,
+} trigger_direction_t;
+
 typedef struct {
     app_mode_t mode;
     char wifi_ssid[CONFIG_WIFI_SSID_MAX + 1];
     char wifi_password[CONFIG_WIFI_PASSWORD_MAX + 1];
     uint8_t volume;
-    float lux_threshold;
-    float lux_dead_zone;
+    trigger_direction_t trigger_direction;
+    float trigger_lux;
+    float dead_zone_lux;
     char radio_url[CONFIG_RADIO_URL_MAX + 1];
     uint16_t birthday_count;
     char birthday_file[CONFIG_MUSIC_NAME_MAX + 1];

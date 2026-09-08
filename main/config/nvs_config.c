@@ -20,8 +20,9 @@ static void set_defaults(app_config_t *config)
     memset(config, 0, sizeof(*config));
     config->mode = APP_MODE_BIRTHDAY;
     config->volume = 80;
-    config->lux_threshold = 200.0f;
-    config->lux_dead_zone = 40.0f;
+    config->trigger_direction = TRIGGER_ABOVE;
+    config->trigger_lux = 300.0f;
+    config->dead_zone_lux = 50.0f;
     config->birthday_count = 1;
     strlcpy(config->birthday_file, "birthday.wav", sizeof(config->birthday_file));
 }
@@ -51,8 +52,9 @@ static esp_err_t persist_locked(void)
     if (err == ESP_OK) err = nvs_set_str(handle, "ssid", s_config.wifi_ssid);
     if (err == ESP_OK) err = nvs_set_str(handle, "password", s_config.wifi_password);
     if (err == ESP_OK) err = nvs_set_u8(handle, "volume", s_config.volume);
-    if (err == ESP_OK) err = nvs_set_blob(handle, "lux", &s_config.lux_threshold, sizeof(float));
-    if (err == ESP_OK) err = nvs_set_blob(handle, "lux_dead", &s_config.lux_dead_zone, sizeof(float));
+    if (err == ESP_OK) err = nvs_set_u8(handle, "trig_dir", (uint8_t)s_config.trigger_direction);
+    if (err == ESP_OK) err = nvs_set_blob(handle, "trig_lux", &s_config.trigger_lux, sizeof(float));
+    if (err == ESP_OK) err = nvs_set_blob(handle, "dead_lux", &s_config.dead_zone_lux, sizeof(float));
     if (err == ESP_OK) err = nvs_set_str(handle, "radio_url", s_config.radio_url);
     if (err == ESP_OK) err = nvs_set_u16(handle, "bday_count", s_config.birthday_count);
     if (err == ESP_OK) err = nvs_set_str(handle, "bday_file", s_config.birthday_file);
@@ -84,9 +86,12 @@ esp_err_t nvs_config_init(void)
     (void)load_string(handle, "password", s_config.wifi_password, sizeof(s_config.wifi_password));
     (void)nvs_get_u8(handle, "volume", &s_config.volume);
     size_t float_size = sizeof(float);
-    (void)nvs_get_blob(handle, "lux", &s_config.lux_threshold, &float_size);
+    (void)nvs_get_blob(handle, "trig_lux", &s_config.trigger_lux, &float_size);
     float_size = sizeof(float);
-    (void)nvs_get_blob(handle, "lux_dead", &s_config.lux_dead_zone, &float_size);
+    (void)nvs_get_blob(handle, "dead_lux", &s_config.dead_zone_lux, &float_size);
+    uint8_t trig_dir = (uint8_t)s_config.trigger_direction;
+    (void)nvs_get_u8(handle, "trig_dir", &trig_dir);
+    if (trig_dir <= TRIGGER_BELOW) s_config.trigger_direction = (trigger_direction_t)trig_dir;
     (void)load_string(handle, "radio_url", s_config.radio_url, sizeof(s_config.radio_url));
     (void)nvs_get_u16(handle, "bday_count", &s_config.birthday_count);
     (void)load_string(handle, "bday_file", s_config.birthday_file, sizeof(s_config.birthday_file));
@@ -99,9 +104,9 @@ esp_err_t nvs_config_init(void)
     nvs_close(handle);
 
     if (s_config.volume > 100) s_config.volume = 100;
-    if (s_config.lux_threshold < 1.0f) s_config.lux_threshold = 1.0f;
-    if (s_config.lux_dead_zone < 1.0f || s_config.lux_dead_zone > 100.0f) {
-        s_config.lux_dead_zone = 40.0f;
+    if (s_config.trigger_lux < 1.0f) s_config.trigger_lux = 300.0f;
+    if (s_config.dead_zone_lux < 0.0f || s_config.dead_zone_lux > s_config.trigger_lux) {
+        s_config.dead_zone_lux = 50.0f;
     }
     if (s_config.birthday_count == 0) s_config.birthday_count = 1;
     if (!filesystem_safe_music_name(s_config.birthday_file)) {
@@ -184,21 +189,34 @@ esp_err_t nvs_config_update_json(const cJSON *json, char *error, size_t error_si
         }
         candidate.volume = (uint8_t)item->valueint;
     }
-    item = cJSON_GetObjectItemCaseSensitive(json, "lux_threshold");
+    item = cJSON_GetObjectItemCaseSensitive(json, "trigger_direction");
+    if (item != NULL) {
+        if (!cJSON_IsString(item) ||
+            (strcmp(item->valuestring, "above") != 0 && strcmp(item->valuestring, "below") != 0)) {
+            snprintf(error, error_size, "trigger_direction must be above or below");
+            goto invalid;
+        }
+        candidate.trigger_direction = strcmp(item->valuestring, "below") == 0
+                                          ? TRIGGER_BELOW : TRIGGER_ABOVE;
+    }
+    item = cJSON_GetObjectItemCaseSensitive(json, "trigger_lux");
     if (item != NULL) {
         if (!cJSON_IsNumber(item) || item->valuedouble < 1 || item->valuedouble > 100000) {
-            snprintf(error, error_size, "lux_threshold must be 1..100000");
+            snprintf(error, error_size, "trigger_lux must be 1..100000");
             goto invalid;
         }
-        candidate.lux_threshold = (float)item->valuedouble;
+        candidate.trigger_lux = (float)item->valuedouble;
     }
-    item = cJSON_GetObjectItemCaseSensitive(json, "lux_dead_zone");
+    item = cJSON_GetObjectItemCaseSensitive(json, "dead_zone_lux");
     if (item != NULL) {
-        if (!cJSON_IsNumber(item) || item->valuedouble < 1 || item->valuedouble > 100) {
-            snprintf(error, error_size, "lux_dead_zone must be 1..100");
+        if (!cJSON_IsNumber(item) || item->valuedouble < 0 || item->valuedouble > 100000) {
+            snprintf(error, error_size, "dead_zone_lux must be 0..100000");
             goto invalid;
         }
-        candidate.lux_dead_zone = (float)item->valuedouble;
+        candidate.dead_zone_lux = (float)item->valuedouble;
+        if (candidate.dead_zone_lux >= candidate.trigger_lux) {
+            candidate.dead_zone_lux = candidate.trigger_lux * 0.2f;
+        }
     }
     item = cJSON_GetObjectItemCaseSensitive(json, "birthday_count");
     if (item != NULL) {
@@ -252,8 +270,10 @@ cJSON *nvs_config_to_json(void)
     cJSON_AddStringToObject(root, "wifi_ssid", config.wifi_ssid);
     cJSON_AddStringToObject(root, "wifi_password", config.wifi_password);
     cJSON_AddNumberToObject(root, "volume", config.volume);
-    cJSON_AddNumberToObject(root, "lux_threshold", config.lux_threshold);
-    cJSON_AddNumberToObject(root, "lux_dead_zone", config.lux_dead_zone);
+    cJSON_AddStringToObject(root, "trigger_direction",
+                            config.trigger_direction == TRIGGER_BELOW ? "below" : "above");
+    cJSON_AddNumberToObject(root, "trigger_lux", config.trigger_lux);
+    cJSON_AddNumberToObject(root, "dead_zone_lux", config.dead_zone_lux);
     cJSON_AddStringToObject(root, "radio_url", config.radio_url);
     cJSON_AddNumberToObject(root, "birthday_count", config.birthday_count);
     cJSON_AddStringToObject(root, "birthday_file", config.birthday_file);

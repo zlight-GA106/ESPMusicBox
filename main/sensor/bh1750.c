@@ -1,6 +1,5 @@
 #include "bh1750.h"
 
-#include <math.h>
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -78,8 +77,6 @@ esp_err_t bh1750_read_lux(float *lux)
 void sensor_task(void *arg)
 {
     (void)arg;
-    float baseline = 0.0f;
-    bool has_baseline = false;
     bool latched = false;
     for (;;) {
         if (!s_ready) {
@@ -90,27 +87,29 @@ void sensor_task(void *arg)
                 vTaskDelay(pdMS_TO_TICKS(5000));
                 continue;
             }
-            has_baseline = false;
         }
         float lux;
         if (bh1750_read_lux(&lux) == ESP_OK) {
             app_state_set_lux(lux);
             app_config_t config;
             nvs_config_get(&config);
-            if (!has_baseline || config.mode != APP_MODE_BIRTHDAY) {
-                baseline = lux;
-                has_baseline = true;
+            if (config.mode != APP_MODE_BIRTHDAY) {
                 latched = false;
             } else {
-                float difference = fabsf(lux - baseline);
-                float rearm_level = config.lux_threshold * (config.lux_dead_zone / 100.0f);
-                if (!latched && difference >= config.lux_threshold && !audio_service_is_active()) {
-                    ESP_LOGI(TAG, "light change %.1f lux triggered birthday playback", difference);
-                    if (audio_service_play_birthday(config.birthday_count) == ESP_OK) latched = true;
-                } else if (latched && difference < rearm_level) {
-                    latched = false;
-                } else if (!latched) {
-                    baseline += (lux - baseline) * 0.05f;
+                bool above = config.trigger_direction == TRIGGER_ABOVE;
+                if (latched) {
+                    double rearm_level = above ? (double)config.trigger_lux - config.dead_zone_lux
+                                               : (double)config.trigger_lux + config.dead_zone_lux;
+                    if (above ? lux <= rearm_level : lux >= rearm_level) latched = false;
+                } else {
+                    bool triggered = above ? lux > config.trigger_lux : lux < config.trigger_lux;
+                    if (triggered && !audio_service_is_active()) {
+                        ESP_LOGI(TAG, "lux %.1f %s threshold %.1f -> play",
+                                 lux, above ? "above" : "below", config.trigger_lux);
+                        if (audio_service_play_birthday(config.birthday_count) == ESP_OK) {
+                            latched = true;
+                        }
+                    }
                 }
             }
         } else {

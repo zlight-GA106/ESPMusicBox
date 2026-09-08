@@ -15,8 +15,9 @@ public sealed class MainForm : Form
     private readonly NumericUpDown _volume = new() { Minimum = 0, Maximum = 100, Value = 80, Width = 100 };
     private readonly RadioButton _birthdayMode = new() { Text = "生日模式", AutoSize = true, Checked = true };
     private readonly RadioButton _radioMode = new() { Text = "网络电台", AutoSize = true };
-    private readonly NumericUpDown _luxThreshold = new() { Minimum = 1, Maximum = 100000, DecimalPlaces = 1, Value = 200, Width = 120 };
-    private readonly NumericUpDown _luxDeadZone = new() { Minimum = 1, Maximum = 100, DecimalPlaces = 1, Value = 40, Width = 120 };
+    private readonly ComboBox _triggerDirection = new() { Width = 105, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly NumericUpDown _triggerLux = new() { Minimum = 1, Maximum = 100000, DecimalPlaces = 1, Value = 300, Width = 110 };
+    private readonly NumericUpDown _deadZoneLux = new() { Minimum = 0, Maximum = 100000, DecimalPlaces = 1, Value = 50, Width = 110 };
     private readonly NumericUpDown _birthdayCount = new() { Minimum = 1, Maximum = 100, Value = 1, Width = 100 };
     private readonly CheckBox _playOnBoot = new() { Text = "通电后直接播放（忽略 BH1750）", AutoSize = true };
     private readonly CheckBox _playBootLoop = new() { Text = "上电播放无限循环", AutoSize = true };
@@ -105,8 +106,15 @@ public sealed class MainForm : Form
         var modes = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         modes.Controls.AddRange([_birthdayMode, _radioMode]);
         AddConfigRow(table, 3, "工作模式", modes);
-        AddConfigRow(table, 4, "触发阈值 (±Lux)", _luxThreshold);
-        AddConfigRow(table, 5, "回差死区 (%阈值)", _luxDeadZone);
+        var trigger = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
+        _triggerDirection.Items.AddRange(["大于", "小于"]);
+        _triggerDirection.SelectedIndex = 0;
+        trigger.Controls.AddRange([
+            new Label { Text = "光照度", AutoSize = true, Padding = new Padding(0, 7, 0, 0) },
+            _triggerDirection, _triggerLux,
+            new Label { Text = "Lux 时播放生日歌", AutoSize = true, Padding = new Padding(4, 7, 0, 0) }]);
+        AddConfigRow(table, 4, "触发条件", trigger);
+        AddConfigRow(table, 5, "死区（正负波动）", _deadZoneLux);
         AddConfigRow(table, 6, "生日歌播放次数", _birthdayCount);
         var boot = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         boot.Controls.AddRange([_playOnBoot, _playBootLoop]);
@@ -121,9 +129,9 @@ public sealed class MainForm : Form
         AddConfigRow(table, 9, "", buttons);
         var note = new Label
         {
-            Text = "触发条件：当前 Lux 比基线高或低超过阈值（|差值| ≥ X Lux）即触发，不是等于某个值。\r\n" +
-                   "死区：触发后亮度需回到阈值×死区% 以内才会重新武装，避免一次变化反复触发。\r\n" +
-                   "未触发时基线以 5%/次缓慢跟随环境。",
+            Text = "触发条件：光照度大于/小于设定值（Lux）时开始播放生日歌（不是变化量）。\r\n" +
+                   "死区（正负波动）：触发后光照度需回到“阈值 ∓ 死区(Lux)”内才重新武装，避免反复触发。" +
+                   "例：大于 300Lux、死区 50Lux → 超过 300Lux 触发，回落到 250Lux 以下才可能再次触发。",
             AutoSize = true,
             ForeColor = Color.DimGray,
             MaximumSize = new Size(680, 0)
@@ -294,8 +302,9 @@ public sealed class MainForm : Form
         _volume.Value = Math.Clamp(config.Volume, 0, 100);
         _birthdayMode.Checked = config.Mode == "birthday";
         _radioMode.Checked = config.Mode == "radio";
-        _luxThreshold.Value = (decimal)Math.Clamp(config.LuxThreshold, 1, 100000);
-        _luxDeadZone.Value = (decimal)Math.Clamp(config.LuxDeadZone, 1, 100);
+        _triggerDirection.SelectedIndex = config.TriggerDirection == "below" ? 1 : 0;
+        _triggerLux.Value = (decimal)Math.Clamp(config.TriggerLux, 1, 100000);
+        _deadZoneLux.Value = (decimal)Math.Clamp(config.DeadZoneLux, 0, 100000);
         _birthdayCount.Value = Math.Clamp(config.BirthdayCount, 1, 100);
         _playOnBoot.Checked = config.PlayOnBoot;
         _playBootLoop.Checked = config.PlayBootLoop;
@@ -311,8 +320,9 @@ public sealed class MainForm : Form
             WifiSsid = _ssid.Text,
             WifiPassword = _password.Text,
             Volume = (int)_volume.Value,
-            LuxThreshold = (double)_luxThreshold.Value,
-            LuxDeadZone = (double)_luxDeadZone.Value,
+            TriggerDirection = _triggerDirection.SelectedIndex == 1 ? "below" : "above",
+            TriggerLux = (double)_triggerLux.Value,
+            DeadZoneLux = (double)_deadZoneLux.Value,
             BirthdayCount = (int)_birthdayCount.Value,
             BirthdayFile = _birthdayFileName,
             PlayOnBoot = _playOnBoot.Checked,
