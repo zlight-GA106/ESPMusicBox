@@ -72,3 +72,42 @@ fastapi uvicorn[standard] requests pytest
 
 - 服务器进程后台跑 8010；`device_simulator/server.*.log` 与 `__pycache__` 已进 .gitignore。
 - 演示/验证脚本对随机游走的竞态处理：一律先 `set_lux` 固定 → 确定性可重复。
+
+---
+
+## 里程碑 M2：Android 配置软件
+
+### 环境搭建（脚本 scripts/setup_android_env.ps1，成功执行）
+
+- SDK 组件原本完全缺失（Studio 只装过 IDE）。脚本从 dl.google.com 拉 cmdline-tools
+  → sdkmanager 装 `platform-tools` / `platforms;android-35` / `build-tools;34.0.0`
+  → `D:\Android\Sdk`。
+- **坑 1：sdkmanager 需要 JAVA_HOME** → 脚本注入 jbr（后证明不可用，见坑 2）。
+- **坑 2（关键）**：Android Studio 2026.1.3 自带 jbr 是 **JDK 25.0.2**，
+  Gradle 8.9 内嵌 Kotlin（intellij JavaVersion）解析 "25.0.2" 直接抛
+  `IllegalArgumentException: 25.0.2`（wrapper 任务都跑不了）。
+  **决策**：走 Adoptium API 下载 **Temurin JDK 17.0.20.1** 到 `D:\Android\jdk-17`，
+  `setx JAVA_HOME` 持久化；构建时显式 `$env:JAVA_HOME`。README 与脚本注释写明原因。
+- 测试机：`adb devices` 检测到 **b5b85793（unauthorized）** —— 需要手机弹窗点
+  「允许 USB 调试」，桌面侧无法代点（已记入"用户手动动作"清单）。
+
+### 技术栈（决定并执行）
+
+- Gradle 8.9（wrapper 由下载的发行版内联生成）+ AGP 8.7.3 + Kotlin 2.0.21
+  + Compose compiler plugin + kotlinx.serialization 2.0.21；BOM 2024.12.01；
+  OkHttp 4.12.0；minSdk 26 / target & compile 35。UI 零第三方（仅 Compose/Material3）。
+- 单 Activity + 底部导航三页签；AppViewModel 内存态 + 3 秒轮询状态页。
+- baseUrl 存 SharedPreferences；JSON snake_case 与设备一致。
+
+### 首编失败 → 修复（干净 APK）
+
+`assembleDebug` 首次失败清单：`call()` 泛型传了 Request 却声明 ()->Response（改签名 `call(Request, parse)`）；
+`json.toJsonString` 不存在（改手写转义）；`vm.config` 可变属性 smart-cast 被拒（改局部 val）；
+MainActivity `remember{}` 里的 `LocalContext.current` 非组合上下文（移到外面）；
+`ExperimentalMaterial3Api` 未导入。修复后 **BUILD SUCCESSFUL in 38s**，
+APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
+
+### 验证状态
+
+- [x] `gradlew.bat assembleDebug` 成功产出 APK。
+- [ ] 装到测试机：awaiting USB 调试授权（手动步骤，见"用户手动动作"清单）。

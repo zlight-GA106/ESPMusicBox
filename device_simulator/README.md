@@ -21,7 +21,7 @@ python device_simulator/simulator.py                # 默认 0.0.0.0:8010
 python device_simulator/simulator.py --port 8010    # 自定义端口
 ```
 
-浏览器打开 http://127.0.0.1:8010/docs 可看 So 台体 API 文档。
+浏览器打开 http://127.0.0.1:8010/docs 可查看完整 API 文档。
 
 - 默认配置：birthday 模式、above 方向、触发 300 Lux、死区 50 Lux、生日歌 `birthday.wav`
 - Android 模拟器里访问宿主机请用 `http://10.0.2.2:8010/`（base URL 要带端口）

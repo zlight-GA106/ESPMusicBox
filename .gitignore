@@ -24,6 +24,7 @@ android/build/
 android/local.properties
 android/.idea/
 android/captures/
+android/*.log
 
 # Editor / OS
 .vs/
