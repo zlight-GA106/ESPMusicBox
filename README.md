@@ -65,13 +65,13 @@ dotnet build pc_tool/EspMusicBox.ConfigTool/EspMusicBox.ConfigTool.csproj
 dotnet run --project pc_tool/EspMusicBox.ConfigTool/EspMusicBox.ConfigTool.csproj
 ```
 
-本机已生成的 1.4.0 Release 程序位于 `dist/EspMusicBox.ConfigTool-1.4.0/EspMusicBox.ConfigTool.exe`。
+本机已生成的 1.5.0 Release 程序位于 `dist/EspMusicBox.ConfigTool-1.5.0/EspMusicBox.ConfigTool.exe`。
 
 串口连接可选择原生 USB CDC 或板载 CH340；设备已联网时也可输入 `http://设备IP/` 使用 HTTP。固件更新页支持 CDC/CH340 串口 OTA。通信细节见 [docs/PROTOCOL.md](docs/PROTOCOL.md)。
 
 ## 生日触发语义
 
-启动后首个有效读数成为亮度基线。未触发时基线以 5% 的速度缓慢跟随环境；当前亮度与基线的绝对差达到 `lux_threshold` 后播放已勾选的生日歌指定次数。亮度回到阈值的 40% 以内才会重新武装，因此一次持续变化只触发一次。启用“通电后直接播放”时跳过首次 BH1750 触发等待。
+启动后首个有效读数成为亮度基线。未触发时基线以 5% 的速度缓慢跟随环境；当前亮度与基线的绝对差（高于或低于基线）达到 `lux_threshold` 后播放已勾选的生日歌指定次数。亮度回到阈值 × `lux_dead_zone`%（默认 40%）以内才会重新武装，因此一次持续变化只触发一次。启用“通电后直接播放”时跳过首次 BH1750 触发等待。
 
 ## 工程结构
 

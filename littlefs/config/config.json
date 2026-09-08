@@ -4,6 +4,7 @@
   "wifi_password": "",
   "volume": 80,
   "lux_threshold": 200,
+  "lux_dead_zone": 40,
   "radio_url": "",
   "birthday_count": 1,
   "birthday_file": "birthday.wav",

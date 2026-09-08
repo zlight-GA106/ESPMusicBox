@@ -66,6 +66,7 @@ CH340 使用 UART0 GPIO43(TX)、GPIO44(RX)，参数为 115200-8-N-1；USB CDC �
   "wifi_password":"secret",
   "volume":80,
   "lux_threshold":200,
+  "lux_dead_zone":40,
   "radio_url":"http://example.com/live.mp3",
   "birthday_count":1,
   "birthday_file":"my_song.wav",
@@ -74,7 +75,7 @@ CH340 使用 UART0 GPIO43(TX)、GPIO44(RX)，参数为 115200-8-N-1；USB CDC �
 }
 ```
 
-范围：`volume` 为 0～100，`lux_threshold` 为 1～100000，`birthday_count` 为 1～100，`mode` 为 `birthday` 或 `radio`。`birthday_file` 指定生日触发使用的文件；`play_on_boot=true` 时生日模式通电后直接播放，不等待 BH1750；`play_boot_loop=true` 时上电播放改为无限循环（忽略 `birthday_count`）。
+范围：`volume` 为 0～100，`lux_threshold` 为 1～100000，`lux_dead_zone` 为 1～100（阈值百分比），`birthday_count` 为 1～100，`mode` 为 `birthday` 或 `radio`。`birthday_file` 指定生日触发使用的文件；`play_on_boot=true` 时生日模式通电后直接播放，不等待 BH1750；`play_boot_loop=true` 时上电播放改为无限循环（忽略 `birthday_count`）。生日触发条件：当前 Lux 与基线的绝对差（高于或低于基线）达到 `lux_threshold` 即触发；触发后需回到 `lux_threshold × lux_dead_zone%` 以内才重新武装。
 
 设备信息对象：
 

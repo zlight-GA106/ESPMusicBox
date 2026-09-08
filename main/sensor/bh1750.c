@@ -103,10 +103,11 @@ void sensor_task(void *arg)
                 latched = false;
             } else {
                 float difference = fabsf(lux - baseline);
+                float rearm_level = config.lux_threshold * (config.lux_dead_zone / 100.0f);
                 if (!latched && difference >= config.lux_threshold && !audio_service_is_active()) {
                     ESP_LOGI(TAG, "light change %.1f lux triggered birthday playback", difference);
                     if (audio_service_play_birthday(config.birthday_count) == ESP_OK) latched = true;
-                } else if (latched && difference < config.lux_threshold * 0.4f) {
+                } else if (latched && difference < rearm_level) {
                     latched = false;
                 } else if (!latched) {
                     baseline += (lux - baseline) * 0.05f;

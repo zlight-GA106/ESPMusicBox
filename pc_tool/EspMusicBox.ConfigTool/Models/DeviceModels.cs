@@ -17,6 +17,7 @@ public sealed class DeviceConfig
     [JsonPropertyName("wifi_password")] public string WifiPassword { get; set; } = "";
     [JsonPropertyName("volume")] public int Volume { get; set; } = 80;
     [JsonPropertyName("lux_threshold")] public double LuxThreshold { get; set; } = 200;
+    [JsonPropertyName("lux_dead_zone")] public double LuxDeadZone { get; set; } = 40;
     [JsonPropertyName("radio_url")] public string RadioUrl { get; set; } = "";
     [JsonPropertyName("birthday_count")] public int BirthdayCount { get; set; } = 1;
     [JsonPropertyName("birthday_file")] public string BirthdayFile { get; set; } = "birthday.wav";

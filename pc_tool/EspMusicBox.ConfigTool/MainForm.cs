@@ -16,6 +16,7 @@ public sealed class MainForm : Form
     private readonly RadioButton _birthdayMode = new() { Text = "生日模式", AutoSize = true, Checked = true };
     private readonly RadioButton _radioMode = new() { Text = "网络电台", AutoSize = true };
     private readonly NumericUpDown _luxThreshold = new() { Minimum = 1, Maximum = 100000, DecimalPlaces = 1, Value = 200, Width = 120 };
+    private readonly NumericUpDown _luxDeadZone = new() { Minimum = 1, Maximum = 100, DecimalPlaces = 1, Value = 40, Width = 120 };
     private readonly NumericUpDown _birthdayCount = new() { Minimum = 1, Maximum = 100, Value = 1, Width = 100 };
     private readonly CheckBox _playOnBoot = new() { Text = "通电后直接播放（忽略 BH1750）", AutoSize = true };
     private readonly CheckBox _playBootLoop = new() { Text = "上电播放无限循环", AutoSize = true };
@@ -95,7 +96,7 @@ public sealed class MainForm : Form
 
     private Control BuildConfigPage()
     {
-        var table = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 2, RowCount = 10 };
+        var table = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 2, RowCount = 11 };
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 125));
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         AddConfigRow(table, 0, "WiFi SSID", _ssid);
@@ -104,21 +105,30 @@ public sealed class MainForm : Form
         var modes = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         modes.Controls.AddRange([_birthdayMode, _radioMode]);
         AddConfigRow(table, 3, "工作模式", modes);
-        AddConfigRow(table, 4, "触发变化 (Lux)", _luxThreshold);
-        AddConfigRow(table, 5, "生日歌播放次数", _birthdayCount);
+        AddConfigRow(table, 4, "触发阈值 (±Lux)", _luxThreshold);
+        AddConfigRow(table, 5, "回差死区 (%阈值)", _luxDeadZone);
+        AddConfigRow(table, 6, "生日歌播放次数", _birthdayCount);
         var boot = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         boot.Controls.AddRange([_playOnBoot, _playBootLoop]);
-        AddConfigRow(table, 6, "上电播放", boot);
-        AddConfigRow(table, 7, "电台 URL", _radioUrl);
+        AddConfigRow(table, 7, "上电播放", boot);
+        AddConfigRow(table, 8, "电台 URL", _radioUrl);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         var load = new Button { Text = "从设备读取", AutoSize = true };
         var save = new Button { Text = "保存到设备", AutoSize = true };
         load.Click += async (_, _) => await RunAsync(LoadConfigAsync, "读取配置");
         save.Click += async (_, _) => await RunAsync(SaveConfigAsync, "保存配置");
         buttons.Controls.AddRange([load, save]);
-        AddConfigRow(table, 8, "", buttons);
-        var note = new Label { Text = "生日触发条件：当前 Lux 与稳定基线的绝对差值达到阈值；回到阈值的 40% 内后重新武装。", AutoSize = true, ForeColor = Color.DimGray };
-        AddConfigRow(table, 9, "说明", note);
+        AddConfigRow(table, 9, "", buttons);
+        var note = new Label
+        {
+            Text = "触发条件：当前 Lux 比基线高或低超过阈值（|差值| ≥ X Lux）即触发，不是等于某个值。\r\n" +
+                   "死区：触发后亮度需回到阈值×死区% 以内才会重新武装，避免一次变化反复触发。\r\n" +
+                   "未触发时基线以 5%/次缓慢跟随环境。",
+            AutoSize = true,
+            ForeColor = Color.DimGray,
+            MaximumSize = new Size(680, 0)
+        };
+        AddConfigRow(table, 10, "说明", note);
         return table;
     }
 
@@ -285,6 +295,7 @@ public sealed class MainForm : Form
         _birthdayMode.Checked = config.Mode == "birthday";
         _radioMode.Checked = config.Mode == "radio";
         _luxThreshold.Value = (decimal)Math.Clamp(config.LuxThreshold, 1, 100000);
+        _luxDeadZone.Value = (decimal)Math.Clamp(config.LuxDeadZone, 1, 100);
         _birthdayCount.Value = Math.Clamp(config.BirthdayCount, 1, 100);
         _playOnBoot.Checked = config.PlayOnBoot;
         _playBootLoop.Checked = config.PlayBootLoop;
@@ -301,6 +312,7 @@ public sealed class MainForm : Form
             WifiPassword = _password.Text,
             Volume = (int)_volume.Value,
             LuxThreshold = (double)_luxThreshold.Value,
+            LuxDeadZone = (double)_luxDeadZone.Value,
             BirthdayCount = (int)_birthdayCount.Value,
             BirthdayFile = _birthdayFileName,
             PlayOnBoot = _playOnBoot.Checked,

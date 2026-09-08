@@ -21,6 +21,7 @@ static void set_defaults(app_config_t *config)
     config->mode = APP_MODE_BIRTHDAY;
     config->volume = 80;
     config->lux_threshold = 200.0f;
+    config->lux_dead_zone = 40.0f;
     config->birthday_count = 1;
     strlcpy(config->birthday_file, "birthday.wav", sizeof(config->birthday_file));
 }
@@ -51,6 +52,7 @@ static esp_err_t persist_locked(void)
     if (err == ESP_OK) err = nvs_set_str(handle, "password", s_config.wifi_password);
     if (err == ESP_OK) err = nvs_set_u8(handle, "volume", s_config.volume);
     if (err == ESP_OK) err = nvs_set_blob(handle, "lux", &s_config.lux_threshold, sizeof(float));
+    if (err == ESP_OK) err = nvs_set_blob(handle, "lux_dead", &s_config.lux_dead_zone, sizeof(float));
     if (err == ESP_OK) err = nvs_set_str(handle, "radio_url", s_config.radio_url);
     if (err == ESP_OK) err = nvs_set_u16(handle, "bday_count", s_config.birthday_count);
     if (err == ESP_OK) err = nvs_set_str(handle, "bday_file", s_config.birthday_file);
@@ -83,6 +85,8 @@ esp_err_t nvs_config_init(void)
     (void)nvs_get_u8(handle, "volume", &s_config.volume);
     size_t float_size = sizeof(float);
     (void)nvs_get_blob(handle, "lux", &s_config.lux_threshold, &float_size);
+    float_size = sizeof(float);
+    (void)nvs_get_blob(handle, "lux_dead", &s_config.lux_dead_zone, &float_size);
     (void)load_string(handle, "radio_url", s_config.radio_url, sizeof(s_config.radio_url));
     (void)nvs_get_u16(handle, "bday_count", &s_config.birthday_count);
     (void)load_string(handle, "bday_file", s_config.birthday_file, sizeof(s_config.birthday_file));
@@ -96,6 +100,9 @@ esp_err_t nvs_config_init(void)
 
     if (s_config.volume > 100) s_config.volume = 100;
     if (s_config.lux_threshold < 1.0f) s_config.lux_threshold = 1.0f;
+    if (s_config.lux_dead_zone < 1.0f || s_config.lux_dead_zone > 100.0f) {
+        s_config.lux_dead_zone = 40.0f;
+    }
     if (s_config.birthday_count == 0) s_config.birthday_count = 1;
     if (!filesystem_safe_music_name(s_config.birthday_file)) {
         strlcpy(s_config.birthday_file, "birthday.wav", sizeof(s_config.birthday_file));
@@ -185,6 +192,14 @@ esp_err_t nvs_config_update_json(const cJSON *json, char *error, size_t error_si
         }
         candidate.lux_threshold = (float)item->valuedouble;
     }
+    item = cJSON_GetObjectItemCaseSensitive(json, "lux_dead_zone");
+    if (item != NULL) {
+        if (!cJSON_IsNumber(item) || item->valuedouble < 1 || item->valuedouble > 100) {
+            snprintf(error, error_size, "lux_dead_zone must be 1..100");
+            goto invalid;
+        }
+        candidate.lux_dead_zone = (float)item->valuedouble;
+    }
     item = cJSON_GetObjectItemCaseSensitive(json, "birthday_count");
     if (item != NULL) {
         if (!cJSON_IsNumber(item) || item->valuedouble < 1 || item->valuedouble > 100) {
@@ -238,6 +253,7 @@ cJSON *nvs_config_to_json(void)
     cJSON_AddStringToObject(root, "wifi_password", config.wifi_password);
     cJSON_AddNumberToObject(root, "volume", config.volume);
     cJSON_AddNumberToObject(root, "lux_threshold", config.lux_threshold);
+    cJSON_AddNumberToObject(root, "lux_dead_zone", config.lux_dead_zone);
     cJSON_AddStringToObject(root, "radio_url", config.radio_url);
     cJSON_AddNumberToObject(root, "birthday_count", config.birthday_count);
     cJSON_AddStringToObject(root, "birthday_file", config.birthday_file);

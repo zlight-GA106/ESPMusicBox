@@ -22,6 +22,7 @@ typedef struct {
     char wifi_password[CONFIG_WIFI_PASSWORD_MAX + 1];
     uint8_t volume;
     float lux_threshold;
+    float lux_dead_zone;
     char radio_url[CONFIG_RADIO_URL_MAX + 1];
     uint16_t birthday_count;
     char birthday_file[CONFIG_MUSIC_NAME_MAX + 1];
