@@ -112,6 +112,34 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
 - [x] `gradlew.bat assembleDebug` 成功产出 APK。
 - [ ] 装到测试机：awaiting USB 调试授权（手动步骤，见"用户手动动作"清单）。
 
+## 真机端到端验证（用户授权 USB 调试后完成）
+
+- **设备**：Xiaomi/Redmi `b5b85793`（23013RK75C，Android 授权后显示 `device`）。
+- **坑 3（安装）**：`adb install`（streaming 通道）在此 ROM 上无限挂起；
+  **改用 `adb install --no-streaming -r` push 安装一次通过**（约 0.25s）。
+- **坑 4（二进制输出）**：PowerShell `>` 重定向 `adb exec-out` 会把 PNG 写坏
+  （变成 UTF-16）；必须 `cmd /c "adb exec-out screencap -p > x.png"` 或直接 pull。
+- **关键通道**：`adb reverse tcp:8010 tcp:8010` 让手机 127.0.0.1:8010 → 宿主机模拟器，
+  完全模拟"设备在局域网"场景；App 默认 base URL `http://127.0.0.1:8010/` 直连成功。
+- **自动化驱动**：uiautomator dump（UTF-8 拉回本地解析 bounds）→ `input tap` →
+  screencap（缩图后人工确认），全程键盘/鼠标零操作。
+
+### 已验证（有截图佐证，存于本地会话记录）
+
+- App 启动 → 点击「连接」→ 状态页显示：ESP32-S3 Birthday Music Box /
+  A4:CF:12:34:56:78 / 1.4.0 / 16.0MB / Lux=1200.0 / 生日模式 / WiFi 已连接 /
+  LittleFS 9.8MB/9.9MB（全部来自模拟器真实数据）。
+- 音频页：birthday.wav ★生日歌（62.5KB）+ test.wav（46.9KB），与 data/ 一致。
+- 配置页：300/50/1 等与模拟器配置一致。
+- 触发联动：`POST /api/sim/lux {"lux":10}` → 停顿 → `{"lux":1200}` 后
+  模拟器 `playback=playing source=birthday.wav`，App 状态页 3s 轮询同步。
+- App 播放：音频页点「播放」test.wav → 模拟器 playing → 状态页「播放中 /
+  test.wav」+ Snackbar「播放中: test.wav」。
+- UI 修复：音频页「单曲无限循环」复选框换行到独立行（修复前文字竖排被挤压），
+  重建重装后横排正常。
+
+> 说明：MyUI 上 `input tap` 偶有 2~4s 排队延迟，截图时机受影响但不影响结论。
+
 ---
 
 ## 收尾
@@ -136,14 +164,15 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
 
 ## 缺失的环境 / 需要用户手动做的动作（完整清单）
 
-1. **测试机 USB 授权**：手机屏幕弹窗点「允许 USB 调试」→
-   `D:\Android\Sdk\platform-tools\adb.exe install -r android\app\build\outputs\apk\debug\app-debug.apk`
-   （当前 `adb devices` 显示 b5b85793 unauthorized）。
-2. **推送 GitHub（可选）**：`git push origin main`（本会话无凭据交互，未 push）。
-3. **（可选）AVD 模拟器**：如需模拟器演示，
-   `D:\Android\Sdk\cmdline-tools\latest\bin\sdkmanager.bat "system-images;android-35;google_apis;x86_64"`
-   后 `avdmanager create avd ...`（本文件未下载系统镜像）。
-4. **环境变量**：`setx JAVA_HOME D:\Android\jdk-17\jdk-17.0.20.1+1`（脚本已执行）；
+1. ~~**测试机 USB 授权**~~ → **已完成**（2026-09-09 01:45 左右授权成功，
+   `adb devices` 显示 `device`；下方为安装/使用命令）。
+   重复安装命令：`D:\Android\Sdk\platform-tools\adb.exe install --no-streaming -r android\app\build\outputs\apk\debug\app-debug.apk`
+2. 若拔插 USB 后（重新）打通手机→宿主机端口：
+   `adb reverse tcp:8010 tcp:8010`（App 里地址仍用 `http://127.0.0.1:8010/`；
+   手机 WiFi 与电脑同网段时也可直接填 `http://<电脑IP>:8010/`）。
+3. **推送 GitHub（可选）**：`git push origin main`（本会话无凭据交互，未 push）。
+4. **（可选）AVD 模拟器**：如需模拟器演示，
+   `sdkmanager "system-images;android-35;google_apis;x86_64"` 后
+   `avdmanager create avd ...`（未下载系统镜像）。
+5. **环境变量**：`setx JAVA_HOME D:\Android\jdk-17\jdk-17.0.20.1+1`（脚本已执行）；
    SDK 路径在 `android/local.properties`（不入库，换机需改）。
-5. 真机演示触发：确保手机与电脑同 WiFi，连 `http://<电脑IP>:8010/`；
-   模拟器用 `http://10.0.2.2:8010/`。

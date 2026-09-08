@@ -86,10 +86,10 @@ fun FilesScreen(vm: AppViewModel, modifier: Modifier = Modifier) {
             OutlinedButton(onClick = { vm.stop() }, enabled = vm.connected) {
                 Text("停止")
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = loop, onCheckedChange = { loop = it })
-                Text("单曲无限循环")
-            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = loop, onCheckedChange = { loop = it })
+            Text("单曲无限循环")
         }
         Spacer(Modifier.height(8.dp))
 

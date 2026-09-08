@@ -40,11 +40,24 @@ gradlew.bat assembleDebug
 ## 安装到测试机
 
 ```powershell
-D:\Android\Sdk\platform-tools\adb.exe install -r android/app/build/outputs/apk/debug/app-debug.apk
+D:\Android\Sdk\platform-tools\adb.exe install --no-streaming -r android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+- 注意：部分 MIUI/Redmi ROM 上默认 streaming 安装会挂起，用 `--no-streaming`
+  （先 push 再由设备端 pm install）一次成功。
 - 若 `adb devices` 显示 `unauthorized`：在手机屏幕弹出的对话框点「允许 USB 调试」后重试。
 - 模拟器（AVD）安装：`adb -e install -r ...\app-debug.apk`。
+
+### 电脑端模拟器 + 真机联调（推荐通道）
+
+```powershell
+# 1. 电脑启动模拟器
+python device_simulator/simulator.py
+# 2. 手机 USB 直连电脑后，把手机 127.0.0.1:8010 转发到电脑 8010：
+D:\Android\Sdk\platform-tools\adb.exe reverse tcp:8010 tcp:8010
+# 3. 手机打开 App，地址填默认 http://127.0.0.1:8010/ 点「连接」即可。
+#    （拔插 USB 后需要重新执行 adb reverse）
+```
 
 ## 连接设备
 
