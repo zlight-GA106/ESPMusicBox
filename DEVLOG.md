@@ -111,3 +111,39 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
 
 - [x] `gradlew.bat assembleDebug` 成功产出 APK。
 - [ ] 装到测试机：awaiting USB 调试授权（手动步骤，见"用户手动动作"清单）。
+
+---
+
+## 收尾
+
+- `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
+  已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。
+- 测试机持续 `unauthorized`；未做 APK 实机安装（模拟器无系统镜像，未下载 ~1.2GB）。
+
+## 明早验收清单逐项勾选
+
+- [x] `device_simulator/simulator.py` 一键启动（`python device_simulator/simulator.py`，
+      默认 0.0.0.0:8010），`verify_simulator.py` 全接口 **PASS（16/16，连跑 3 次稳定）**
+      —— 覆盖 info/status/config 读写、400 非法字段、文件上传/列表/删除/404、
+      播放/停止/循环/流媒体、above & below 触发 + 死区锁存 + 重新武装。
+- [x] `android/` 工程 `gradlew.bat assembleDebug` 成功，
+      APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9,559,804 B，2026-09-09 01:16）。
+- [x] README：`device_simulator/README.md`（启动/验证/curl 演示步骤、
+      模拟器访问地址说明）与 `android/README.md`（构建/安装/连接地址/触发演示）。
+- [x] `DEVLOG.md`：全程日志 + 本清单。
+- [x] Git：`git log` 可查 `04824a7`（模拟器）、`b12e876`（Android 工程+脚本）；
+      main 分支、无 amend、未动固件代码（main/、components/ 零改动，只新增）。
+
+## 缺失的环境 / 需要用户手动做的动作（完整清单）
+
+1. **测试机 USB 授权**：手机屏幕弹窗点「允许 USB 调试」→
+   `D:\Android\Sdk\platform-tools\adb.exe install -r android\app\build\outputs\apk\debug\app-debug.apk`
+   （当前 `adb devices` 显示 b5b85793 unauthorized）。
+2. **推送 GitHub（可选）**：`git push origin main`（本会话无凭据交互，未 push）。
+3. **（可选）AVD 模拟器**：如需模拟器演示，
+   `D:\Android\Sdk\cmdline-tools\latest\bin\sdkmanager.bat "system-images;android-35;google_apis;x86_64"`
+   后 `avdmanager create avd ...`（本文件未下载系统镜像）。
+4. **环境变量**：`setx JAVA_HOME D:\Android\jdk-17\jdk-17.0.20.1+1`（脚本已执行）；
+   SDK 路径在 `android/local.properties`（不入库，换机需改）。
+5. 真机演示触发：确保手机与电脑同 WiFi，连 `http://<电脑IP>:8010/`；
+   模拟器用 `http://10.0.2.2:8010/`。
