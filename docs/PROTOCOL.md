@@ -41,6 +41,9 @@ CH340 使用 UART0 GPIO43(TX)、GPIO44(RX)，参数为 115200-8-N-1；USB CDC �
 | `file.delete` | `{"name":"birthday.wav"}` | 无 |
 | `audio.play` | `{"name":"birthday.wav","loop":true}`；`loop` 可省略，默认 `false` | 无 |
 | `audio.stop` | 无 | 无 |
+| `audio.diagnostics` | 无 | `{"bclk_toggled":true,"ws_toggled":true,"dout_toggled":true}` |
+| `audio.sine` | `{"seconds":5,"bits":16}` | 成功响应后设备重启，开机时播放 1 kHz 测试音 |
+| `uart.baud` | `{"baud":115200}`（仅 UART 通道；115200/230400/460800/921600/1500000/2000000） | 响应以新波特率发送 |
 | `ota.begin` | `{"size":1200000}` | 无 |
 | `ota.chunk` | `{"base64":"..."}` | 无 |
 | `ota.end` | 无 | 成功响应后自动重启 |
@@ -48,9 +51,11 @@ CH340 使用 UART0 GPIO43(TX)、GPIO44(RX)，参数为 115200-8-N-1；USB CDC �
 
 `audio.play` 的 `loop=true` 表示无限循环所选单曲，直到收到 `audio.stop`、播放另一文件或文件被删除。状态对象中的 `playback_loop` 会在循环期间为 `true`。
 
-串口固件更新依次发送 `ota.begin`、若干 `ota.chunk` 和 `ota.end`，每块原始固件数据最多 640 字节。固件写入非当前 OTA 分区，并在完整镜像校验通过后切换启动分区；失败时发送 `ota.abort`。
+`audio.diagnostics` 报告最近一次播放期间 BCLK/WS/DIN 三根信号线是否都观察到了电平翻转，用于排查 I2S 硬件链路。`audio.sine` 保存请求到 NVS 后重启，开机时用裸 `driver/i2s_std.h` 播放 1 kHz 正弦波（16/32-bit 可选），之后正常启动。
 
-上传时依次发送 `file.begin`、若干 `file.chunk`、`file.end`。每块原始数据最多 192 字节，再做 Base64 编码。固件先写 `.upload` 临时文件；只有总字节数与声明的 `size` 完全相等才替换目标文件。失败时发送 `file.abort`。
+串口固件更新依次发送 `ota.begin`、若干 `ota.chunk` 和 `ota.end`，每块原始固件数据最多 2880 字节。固件写入非当前 OTA 分区，并在完整镜像校验通过后切换启动分区；失败时发送 `ota.abort`。
+
+上传时依次发送 `file.begin`、若干 `file.chunk`、`file.end`。每块原始数据最多 2880 字节，再做 Base64 编码；单条 JSON 请求最长 4095 字符。固件先写 `.upload` 临时文件；只有总字节数与声明的 `size` 完全相等才替换目标文件。失败时发送 `file.abort`；若上一次上传被中断，`file.begin` 会自动清理残留会话。设备端 UART0 由独立高优先级任务整行接收后入队处理，客户端可按窗口连续发送多个 `file.chunk`/`ota.chunk` 再统一读取响应以提高吞吐。
 
 配置对象：
 
@@ -64,11 +69,12 @@ CH340 使用 UART0 GPIO43(TX)、GPIO44(RX)，参数为 115200-8-N-1；USB CDC �
   "radio_url":"http://example.com/live.mp3",
   "birthday_count":1,
   "birthday_file":"my_song.wav",
-  "play_on_boot":false
+  "play_on_boot":false,
+  "play_boot_loop":false
 }
 ```
 
-范围：`volume` 为 0～100，`lux_threshold` 为 1～100000，`birthday_count` 为 1～100，`mode` 为 `birthday` 或 `radio`。`birthday_file` 指定生日触发使用的文件；`play_on_boot=true` 时生日模式通电后直接播放，不等待 BH1750。
+范围：`volume` 为 0～100，`lux_threshold` 为 1～100000，`birthday_count` 为 1～100，`mode` 为 `birthday` 或 `radio`。`birthday_file` 指定生日触发使用的文件；`play_on_boot=true` 时生日模式通电后直接播放，不等待 BH1750；`play_boot_loop=true` 时上电播放改为无限循环（忽略 `birthday_count`）。
 
 设备信息对象：
 

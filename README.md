@@ -8,7 +8,7 @@
 - MAX98357A（BCLK=GPIO4、WS=GPIO5、DIN=GPIO6）I2S DMA 输出
 - LittleFS 中的 PCM 8/16/24/32-bit、32-bit Float WAV、本地 MP3 和 HTTP/HTTPS MP3 流
 - PSRAM 音频缓冲、0～100 软件音量、播放/停止、单曲无限循环和电台自动重连
-- NVS 配置、可选生日歌文件、通电直接播放，同时镜像为 `/littlefs/config/config.json`
+- NVS 配置、可选生日歌文件、通电直接播放（可选无限循环），同时镜像为 `/littlefs/config/config.json`
 - USB CDC、CH340 UART0 JSON Lines 配置通道和 WiFi HTTP API
 - 上传、删除、列表和试听 LittleFS 音频
 - 双 OTA 应用分区，支持通过 USB CDC 或 CH340 更新应用固件
@@ -65,7 +65,7 @@ dotnet build pc_tool/EspMusicBox.ConfigTool/EspMusicBox.ConfigTool.csproj
 dotnet run --project pc_tool/EspMusicBox.ConfigTool/EspMusicBox.ConfigTool.csproj
 ```
 
-本机已生成的 1.3.0 Release 程序位于 `dist/EspMusicBox.ConfigTool-1.3.0/EspMusicBox.ConfigTool.exe`。
+本机已生成的 1.4.0 Release 程序位于 `dist/EspMusicBox.ConfigTool-1.4.0/EspMusicBox.ConfigTool.exe`。
 
 串口连接可选择原生 USB CDC 或板载 CH340；设备已联网时也可输入 `http://设备IP/` 使用 HTTP。固件更新页支持 CDC/CH340 串口 OTA。通信细节见 [docs/PROTOCOL.md](docs/PROTOCOL.md)。
 
