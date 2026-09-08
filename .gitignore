@@ -12,6 +12,19 @@ pc_tool/**/obj/
 # Local releases
 dist/
 
+# Python simulator
+device_simulator/__pycache__/
+device_simulator/server.*.log
+device_simulator/*.pyc
+
+# Android build output
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+android/captures/
+
 # Editor / OS
 .vs/
 .vscode/
