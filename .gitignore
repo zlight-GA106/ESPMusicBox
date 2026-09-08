@@ -1,0 +1,20 @@
+# ESP-IDF build output
+build/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+managed_components/
+
+# .NET build output
+pc_tool/**/bin/
+pc_tool/**/obj/
+
+# Local releases
+dist/
+
+# Editor / OS
+.vs/
+.vscode/
+*.user
+Thumbs.db
+Desktop.ini

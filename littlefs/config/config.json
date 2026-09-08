@@ -1,0 +1,12 @@
+{
+  "mode": "birthday",
+  "wifi_ssid": "",
+  "wifi_password": "",
+  "volume": 80,
+  "lux_threshold": 200,
+  "radio_url": "",
+  "birthday_count": 1,
+  "birthday_file": "birthday.wav",
+  "play_on_boot": false,
+  "play_boot_loop": false
+}
