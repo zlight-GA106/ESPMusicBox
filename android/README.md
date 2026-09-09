@@ -75,8 +75,20 @@ powershell -ExecutionPolicy Bypass -File scripts/build_android_release.ps1
 
 脚本会构建并校验正式签名、包名和 16 KiB 对齐，输出：
 
-- `dist/ESPMusicBox-Android-v1.6.0.apk`
-- `dist/ESPMusicBox-Android-v1.6.0.apk.sha256`
+- `dist/EspMusicBox.ConfigTool-Android-1.6.0.apk`
+- `dist/EspMusicBox.ConfigTool-Android-1.6.0.apk.sha256`
+- `dist/EspMusicBox.ConfigTool-Android-1.6.0-QQ.zip`
+- `dist/README-Android-Install-CN.txt`
+
+脚本明确验证 V1、V2、V3 三种签名方案。QQ/微信群优先发送 ZIP，群友完整解压后再
+点击其中的 APK；这可以避免聊天软件拦截 APK，也能用 ZIP CRC 发现下载或传输损坏。
+GitHub 分享时应发送固定的 Release 页面：
+`https://github.com/zlight-GA106/ESPMusicBox/releases/tag/v1.6.0`。不要复制下载完成后
+地址栏中的 `release-assets.githubusercontent.com` 长链接，该地址带有时效签名。
+
+v1.6.0 正式 APK 的准确大小和 SHA-256 记录在同目录的 `.sha256` 文件中。安装器没有
+显示应用图标、名称和版本，直接弹出“安装包已损坏”时，表示系统在解析 APK 文件前段
+就失败了；先核对文件大小和 SHA-256，再删除残包并从固定 Release 页面完整下载。
 
 普通未解锁手机可从下载目录或聊天软件中打开 APK，并选择手机自带的“软件包安装程序”。
 如果 ColorOS 把 ADB 安装确认页转交给 Installer X 后显示

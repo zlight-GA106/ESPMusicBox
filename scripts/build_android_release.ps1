@@ -48,8 +48,14 @@ if ($LASTEXITCODE -ne 0 -or $BadgingText -notmatch "package: name='com\.espmusic
     throw "APK manifest/package validation failed"
 }
 
-& $ApkSigner verify --verbose $ApkPath
+$SignatureOutput = & $ApkSigner verify --verbose --min-sdk-version 23 $ApkPath
+$SignatureText = $SignatureOutput -join "`n"
 if ($LASTEXITCODE -ne 0) { throw "APK signature verification failed" }
+foreach ($scheme in @("v1", "v2", "v3")) {
+    if ($SignatureText -notmatch "Verified using $scheme scheme .*: true") {
+        throw "APK $scheme signature is missing or invalid"
+    }
+}
 
 & $ZipAlign -c -P 16 4 $ApkPath
 if ($LASTEXITCODE -ne 0) { throw "APK 16 KiB alignment verification failed" }
@@ -60,12 +66,38 @@ $VersionName = $VersionMatch.Groups[1].Value
 
 $DistRoot = Join-Path $RepoRoot "dist"
 New-Item -ItemType Directory -Force -Path $DistRoot | Out-Null
-$DistApk = Join-Path $DistRoot "ESPMusicBox-Android-v$VersionName.apk"
+$DistApk = Join-Path $DistRoot "EspMusicBox.ConfigTool-Android-$VersionName.apk"
 Copy-Item -LiteralPath $ApkPath -Destination $DistApk -Force
 
-$Hash = (Get-FileHash -LiteralPath $DistApk -Algorithm SHA256).Hash.ToLowerInvariant()
+$Sha256 = [System.Security.Cryptography.SHA256]::Create()
+$ApkStream = [System.IO.File]::OpenRead($DistApk)
+try {
+    $HashBytes = $Sha256.ComputeHash($ApkStream)
+} finally {
+    $ApkStream.Dispose()
+    $Sha256.Dispose()
+}
+$Hash = ([System.BitConverter]::ToString($HashBytes) -replace "-", "").ToLowerInvariant()
 $HashPath = "$DistApk.sha256"
-Set-Content -LiteralPath $HashPath -Encoding ascii -NoNewline -Value "$Hash  $(Split-Path -Leaf $DistApk)"
+Set-Content -LiteralPath $HashPath -Encoding ascii -Value "$Hash  $(Split-Path -Leaf $DistApk)"
+
+$ApkSize = (Get-Item -LiteralPath $DistApk).Length
+$GuidePath = Join-Path $DistRoot "README-Android-Install-CN.txt"
+$ReleasePage = "https://github.com/zlight-GA106/ESPMusicBox/releases/tag/v$VersionName"
+$GuideTemplatePath = Join-Path $RepoRoot "android\INSTALL_CN.txt"
+$Guide = (Get-Content -LiteralPath $GuideTemplatePath -Raw -Encoding utf8).
+    Replace("{{VERSION}}", $VersionName).
+    Replace("{{APK_SIZE}}", [string]$ApkSize).
+    Replace("{{SHA256}}", $Hash).
+    Replace("{{RELEASE_PAGE}}", $ReleasePage)
+Set-Content -LiteralPath $GuidePath -Encoding utf8 -Value $Guide
+
+$TransportZip = Join-Path $DistRoot "EspMusicBox.ConfigTool-Android-$VersionName-QQ.zip"
+if (Test-Path -LiteralPath $TransportZip) {
+    Remove-Item -LiteralPath $TransportZip -Force
+}
+Compress-Archive -LiteralPath @($DistApk, $HashPath, $GuidePath) -DestinationPath $TransportZip
 
 Write-Host "Release APK: $DistApk"
 Write-Host "SHA-256:    $Hash"
+Write-Host "QQ ZIP:      $TransportZip"
