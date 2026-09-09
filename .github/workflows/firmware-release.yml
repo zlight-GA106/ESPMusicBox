@@ -1,0 +1,45 @@
+name: Build firmware release asset
+
+# 一键工作流：用官方 espressif/idf 容器编译 ESP32-S3 固件并把 zip 挂到指定 GitHub Release。
+# 用法：GitHub → Actions → "Build firmware release asset" → Run workflow → 输入 release_tag 后运行，
+#       例如 v1.6.0（主分支被 tag 到同一提交时也可用 push 触发）。
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to attach firmware to (e.g. v1.6.0)'
+        required: true
+        default: v1.6.0
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:release-v5.5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build firmware (ESP32-S3)
+        run: |
+          source $IDF_PATH/export.sh
+          idf.py set-target esp32s3
+          idf.py build
+
+      - name: Package firmware zip
+        run: |
+          mkdir -p dist
+          cp build/esp_music_box.bin dist/esp_music_box.bin
+          cp build/bootloader/bootloader.bin dist/ 2>/dev/null || true
+          cp build/partition_table/partition-table.bin dist/ 2>/dev/null || true
+          ls -la dist/
+          (cd dist && zip -9 esp_music_box_firmware.zip esp_music_box.bin bootloader.bin partition-table.bin)
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
+          files: dist/esp_music_box_firmware.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

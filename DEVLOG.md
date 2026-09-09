@@ -200,6 +200,24 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
   OTA 固件更新区全部正常渲染（按钮未连接时禁用态正确）。
 - 串口实机链路待接真实 ESP32+OTG 验证（协议层已按 PROTOCOL.md 1:1 实现）。
 
+## 里程碑 M4：发布 GitHub Release v1.6.0（资产补充）
+
+- 现状：v1.6.0 release 早已存在（tag v1.6.0 == bf35eed == 当前固件代码，本轮只新增
+  android/device_simulator，固件零改动），原只有 PC 工具 zip 且无固件二进制。
+- **做什么**：重构建并替换 `EspMusicBox.ConfigTool-1.6.0.zip`（同 1.6.0 源码，
+  dotnet publish 本地产出）；新增 `EspMusicBox.ConfigTool-Android-1.6.0.apk`
+  （9.6MB，含串口模式）；更新 release 说明。
+- **认证方案**：本机无 gh CLI/winget/docker；用 `git credential fill` 从系统凭据管理器
+  取出已存的 GitHub token（避免二次登录），curl/urllib 调用 releases API 上传资产成功。
+  坑：Out-File 带 BOM/换行 → Trim() 后正常；同名资产须先 DELETE 再上传（204）。
+- **固件二进制**：本机无 ESP-IDF 环境（C:\Espressif 不存在、idf.py、无 docker），
+  无法产出 build/esp_music_box.bin。**方案**：新增 GitHub Actions 工作流
+  `.github/workflows/firmware-release.yml`（官方 espressif/idf:release-v5.5 容器 +
+  softprops/action-gh-release），在 GitHub → Actions → Run workflow 输入
+  release_tag=v1.6.0 一键构建并挂载 `esp_music_box_firmware.zip`；
+  同时支持未来 tag push v* 全自动。此路径已写入 release 说明。
+- 结果：release 资产 = [PC 工具 zip, 安卓 APK]（均验证上传成功），固件一键工作流就绪。
+
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
   已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。
