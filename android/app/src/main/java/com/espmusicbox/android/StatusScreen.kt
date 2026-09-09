@@ -16,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -36,27 +37,56 @@ fun StatusScreen(vm: AppViewModel, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("设备连接", style = MaterialTheme.typography.titleLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = urlInput,
-                onValueChange = { urlInput = it },
-                label = { Text("设备地址 (HTTP)") },
-                singleLine = true,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            if (!vm.connected) {
-                Button(onClick = {
-                    vm.setBaseUrl(urlInput)
-                    vm.connect()
-                }) { Text("连接") }
-            } else {
-                OutlinedButton(onClick = { vm.setConnected(false) }) { Text("断开") }
-            }
+            Text("音乐盒配置助手", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.width(6.dp))
+            Text("v${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (vm.connected) {
-            Text("已连接: ${vm.baseUrl}", style = MaterialTheme.typography.bodySmall)
+        Text("传输方式", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = vm.transport == Transport.HTTP,
+                onClick = {
+                    if (vm.transport != Transport.HTTP && vm.connected) vm.disconnect()
+                    vm.transport = Transport.HTTP
+                })
+            Text("HTTP（设备地址或模拟器）")
+            Spacer(Modifier.width(12.dp))
+            RadioButton(selected = vm.transport == Transport.USB_SERIAL,
+                onClick = {
+                    if (vm.transport != Transport.USB_SERIAL && vm.connected) vm.disconnect()
+                    vm.transport = Transport.USB_SERIAL
+                })
+            Text("USB 串口")
+        }
+
+        Text("设备连接", style = MaterialTheme.typography.titleMedium)
+        if (vm.transport == Transport.HTTP) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = { urlInput = it },
+                    label = { Text("设备地址 (HTTP)") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                if (!vm.connected) {
+                    Button(onClick = {
+                        vm.setBaseUrl(urlInput)
+                        vm.connect()
+                    }) { Text("连接") }
+                } else {
+                    OutlinedButton(onClick = { vm.disconnect() }) { Text("断开") }
+                }
+            }
+            if (vm.connected) {
+                Text("已连接: ${vm.baseUrl}", style = MaterialTheme.typography.bodySmall)
+            }
+        } else {
+            Text("串口连接请在「串口」页选择设备并授权（USB OTG）。",
+                style = MaterialTheme.typography.bodyMedium)
         }
         if (vm.busy) {
             Text("请求中…", style = MaterialTheme.typography.bodySmall)

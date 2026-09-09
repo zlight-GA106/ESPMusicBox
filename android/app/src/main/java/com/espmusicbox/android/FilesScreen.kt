@@ -96,6 +96,9 @@ fun FilesScreen(vm: AppViewModel, modifier: Modifier = Modifier) {
         if (vm.files.isEmpty()) {
             Text("暂无文件（上传 .wav/.mp3）", style = MaterialTheme.typography.bodyMedium)
         }
+        vm.progressText?.let {
+            Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+        }
         LazyColumn(Modifier.fillMaxWidth()) {
             items(vm.files, key = { it.name }) { file ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {

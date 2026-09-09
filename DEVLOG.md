@@ -142,7 +142,49 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
 
 ---
 
-## 收尾
+## 里程碑 M3：串口配置模式 1:1 移植 + 新测试机 + 标题/图标
+
+### 需求要点（用户指示）
+
+- 加入并保留串口配置模式：串口传输与配置是重要环节，**一比一移植全部功能**。
+- 更换了测试机（继续开发）。
+- 软件标题「音乐盒配置助手（版本号随电脑端）」——电脑端 pc_tool 当前为 **1.6.0**
+  （csproj <Version>1.6.0</Version>），故 Android versionName=1.6.0、标题含 v1.6.0。
+- 图标用默认安卓机器人（自绘 vector 绿色触角头 + adaptive icon，mipmap-anydpi-v26）。
+- 完成后提交并合并到 GitHub。
+
+### 实现
+
+- 抽象 `DevApi` 接口（HttpApi / SerialTransport 两个实现），配置、音频、状态页签
+  全部共用；AppViewModel 改为 Compose 状态驱动（连接状态/数据/进度自动刷新）。
+- **SerialTransport（串口窗 = docs/PROTOCOL.md 全命令）**：
+  ping / info.get / status.get / config.get / config.set / file.list / file.delete /
+  file.begin-chunk-end-abort（2048B/块 base64，逐块请求-确认，失败自动 abort）
+  / audio.play / audio.stop / audio.diagnostics / audio.sine / uart.baud
+  （115200~2000000，命令后重设参数）/ ota.begin-chunk-end-abort（完成设备重启换分区）。
+- USB 设备：usb-serial-for-android 3.7.0（JitPack）+ 系统权限弹窗（USB_PERMISSION
+  BroadcastReceiver + RECEIVER_NOT_EXPORTED）；lib 3.7.0 的 API 差异：`open`
+  为单参数（UsbDeviceConnection）、无 inputStream 属性 → 自实现行缓冲读取
+  （port.read 轮询按 '\n' 切行、4 秒超时）；ping 握手验证对端固件。
+- 串口页签（第 4 页）：设备列表/授权连接、波特率、Ping、音频诊断三线翻转、
+  3s/16bit 测试音、OTA（.bin 选择 + 进度 + 重启提示）。
+- 新标题：「音乐盒配置助手 v1.6.0」（BuildConfig.VERSION_NAME 动态）；launcher 名称
+  「音乐盒配置助手」；图标 mipmap/ic_launcher（自绘安卓机器人自适应图标）。
+
+### 构建
+
+- 首次失败：usb-serial 3.7.0 不在 google()/mavenCentral → 加 `jitpack.io` 仓库。✓
+- 二次/三次失败（库 API 差异 + 接口签名 + compose forEach + 属性冲突），全部修复后
+  **BUILD SUCCESSFUL**，APK badging 确认：versionName=1.6.0、label=音乐盒配置助手、
+  icon=mipmap-anydpi-v26/ic_launcher。
+
+### 测试机
+
+- 新测试机此时**尚未出现**于 `adb devices`（尝试 restart adb server 无效）。
+  待用户把设备插入/开启 USB 调试后：安装命令见 android/README.md；
+  计划：install --no-streaming → adb reverse → 连接模拟器 快速回归 HTTP 联动；
+  串口链路需真实 ESP32 + OTG 才能实测（README 已写步骤）。
+
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
   已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。

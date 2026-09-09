@@ -48,6 +48,13 @@ data class AudioFile(
 )
 
 @Serializable
+data class Diagnostics(
+    @SerialName("bclk_toggled") val bclkToggled: Boolean = false,
+    @SerialName("ws_toggled") val wsToggled: Boolean = false,
+    @SerialName("dout_toggled") val doutToggled: Boolean = false,
+)
+
+@Serializable
 data class OkResponse(val ok: Boolean = false)
 
 @Serializable

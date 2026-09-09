@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,6 +80,12 @@ fun AppRoot(vm: AppViewModel) {
                     icon = { Icon(Icons.Filled.List, contentDescription = null) },
                     label = { Text("音频") }
                 )
+                NavigationBarItem(
+                    selected = tab == 3,
+                    onClick = { currentTab.value = 3 },
+                    icon = { Icon(Icons.Filled.Send, contentDescription = null) },
+                    label = { Text("串口") }
+                )
             }
         }
     ) { padding ->
@@ -86,7 +93,8 @@ fun AppRoot(vm: AppViewModel) {
         when (tab) {
             0 -> StatusScreen(vm, mod)
             1 -> ConfigScreen(vm, mod)
-            else -> FilesScreen(vm, mod)
+            2 -> FilesScreen(vm, mod)
+            else -> SerialScreen(vm, mod)
         }
     }
 }
