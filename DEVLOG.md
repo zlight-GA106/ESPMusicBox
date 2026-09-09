@@ -187,6 +187,19 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
   本会话直接 push 成功；凭据已存入系统，后续 `git push` 无需再交互）。
   helper 为 `scripts/push_github.ps1`（留档可复用）。
 
+### 原测试机回归（插回后 v1.6.0 验证完成）
+
+- `adb install --no-streaming -r` 成功；桌面图标显示「音乐盒配置助手」+
+  安卓绿色机器人（自适应图标）。
+- 状态页：标题「音乐盒配置助手 v1.6.0」、传输方式单选（HTTP/USB 串口）正常。
+- **注意坑**：UI dump 的按钮坐标会随布局变化（本次按钮中心 y 从 442 → 904），
+  建议每次先 dump 取 bounds 再 tap——本次失手两次点空后修正坐标即连接成功。
+- HTTP 连接（adb reverse → 模拟器）成功：设备信息/状态页数据与模拟器一致；
+  `POST /api/sim/lux 1200` 后 3 秒轮询自动把 Lux 10.0→1200.0（联动确认）。
+- 串口页：USB 设备列表（无 OTG 时为 0）、波特率 6 档、Ping/音频诊断/测试音、
+  OTA 固件更新区全部正常渲染（按钮未连接时禁用态正确）。
+- 串口实机链路待接真实 ESP32+OTG 验证（协议层已按 PROTOCOL.md 1:1 实现）。
+
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
   已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。
