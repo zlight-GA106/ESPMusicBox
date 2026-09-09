@@ -230,6 +230,23 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
   桌面圆形遮罩内扳手饱满可见（截图确认）。
 - Release：APK 资产已删除旧版重新上传（10,059,211 B），PC 工具 zip 不受影响。
 
+## 里程碑 M6：ColorOS 16 解析失败 → 正式签名 release APK
+
+- **现象**：1+ 手机 ColorOS 16（当前文件管理器/浏览器直装）对先前发布的
+  debug 签名 APK 报「解析失败/未知错误」（ApkAssets.nativeLoad fd 加载失败）。
+  本地 zip 完整性 OK → 判断为安装器对 debug 证书 + v1 禁签的包不友好（非损坏）。
+- **修复**：
+  1. 生成自有 release keystore：`android/keystore/espmusicbox-release.jks`
+     （alias espmusicbox, RSA2048, 10000 天；密码同目录 keystore.txt 记录；
+      **keystore/ 与 keystore.properties 已入 .gitignore，不进仓库**）。
+  2. `build.gradle.kts`：读取 `keystore.properties` 配置 signingConfig，
+     release 类型启用 **v1+v2+v3 签名**；`assembleRelease` 构建。
+  3. 校验：apksigner verify 通过（CN=ESP MusicBox, SHA-256 06136579...）、
+     zip test OK；自家测试机卸载 debug 版后安装 release 版并启动正常。
+- **发布**：替换 release 资产 `EspMusicBox.ConfigTool-Android-1.6.0.apk` →
+  正式签名版（7,351,253 B）。用户在 ColorOS 16 重新下载安装即可。
+- 后续所有发布均走 `gradlew assembleRelease`（previously debug only）。
+
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
   已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。

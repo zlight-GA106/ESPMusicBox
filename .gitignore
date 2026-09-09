@@ -25,6 +25,8 @@ android/local.properties
 android/.idea/
 android/captures/
 android/*.log
+android/keystore/
+android/keystore.properties
 
 # Editor / OS
 .vs/

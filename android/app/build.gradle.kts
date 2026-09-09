@@ -5,6 +5,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+import java.util.Properties
+
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.espmusicbox.android"
     compileSdk = 35
@@ -17,9 +24,22 @@ android {
         versionName = "1.6.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file(keystoreProps.getProperty("storeFile") ?: "keystore/missing.jks")
+            storePassword = keystoreProps.getProperty("storePassword") ?: ""
+            keyAlias = keystoreProps.getProperty("keyAlias") ?: ""
+            keyPassword = keystoreProps.getProperty("keyPassword") ?: ""
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
