@@ -1,5 +1,5 @@
 # Android build env one-shot setup script (Windows PowerShell 5.1)
-# Purpose: install Android SDK (cmdline-tools + platform 35 + build-tools 34) and a
+# Purpose: install Android SDK (cmdline-tools + platform 35 + build-tools 35) and a
 #          Temurin JDK 17 under D:\Android ONCE, so that `android\gradlew.bat
 #          assembleDebug` works out of the box.
 # Why JDK 17 and not Studio jbr: Android Studio 2026.x bundles JDK 25 (jbr), and
@@ -64,8 +64,8 @@ Write-Host "[3/4] Accepting licenses ..."
 1..20 | ForEach-Object { "y" } | & $SdkManager --sdk_root=$SdkRoot --licenses
 Write-Host "        licenses exit=$LASTEXITCODE"
 
-Write-Host "[4/4] Installing platform-tools / platforms;android-35 / build-tools;34.0.0 ..."
-& $SdkManager --sdk_root=$SdkRoot "platform-tools" "platforms;android-35" "build-tools;34.0.0"
+Write-Host "[4/4] Installing platform-tools / platforms;android-35 / build-tools;35.0.0 ..."
+& $SdkManager --sdk_root=$SdkRoot "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 if ($LASTEXITCODE -ne 0) { throw "sdkmanager install failed, exit=$LASTEXITCODE" }
 
 # ---------------------------------------------------------------- persist

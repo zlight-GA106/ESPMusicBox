@@ -65,6 +65,25 @@ D:\Android\Sdk\platform-tools\adb.exe install --no-streaming -r android/app/buil
 - `adb devices` 显示 `unauthorized` 时在手机弹窗点「允许 USB 调试」。
 - 拔插 USB 后恢复手机→宿主机映射：`adb reverse tcp:8010 tcp:8010`。
 
+## 分发给普通手机
+
+群发时只使用正式签名的发布包，不要发送 `app-debug.apk`：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_android_release.ps1
+```
+
+脚本会构建并校验正式签名、包名和 16 KiB 对齐，输出：
+
+- `dist/ESPMusicBox-Android-v1.6.0.apk`
+- `dist/ESPMusicBox-Android-v1.6.0.apk.sha256`
+
+普通未解锁手机可从下载目录或聊天软件中打开 APK，并选择手机自带的“软件包安装程序”。
+如果 ColorOS 把 ADB 安装确认页转交给 Installer X 后显示
+`SecurityException: Permission Denial: opening provider`，说明转交时没有授予临时
+`content://` URI 的读取权限；此时 Installer X 尚未读取 APK，和 APK 内容或签名无关。
+请从文件管理器直接打开发布包，或改用系统软件包安装程序。
+
 ## 串口模式使用（真机 + ESP32-S3）
 
 1. 手机用 OTG 转接线接 ESP32-S3 的**原生 USB 口**或 CH340 模块（UART0 交叉：

@@ -15,6 +15,8 @@ val keystoreProps = Properties().apply {
 android {
     namespace = "com.espmusicbox.android"
     compileSdk = 35
+    // Keep release APK native libraries aligned for 16 KiB page-size devices.
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.espmusicbox.android"
