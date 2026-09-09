@@ -180,10 +180,12 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
 
 ### 测试机
 
-- 新测试机此时**尚未出现**于 `adb devices`（尝试 restart adb server 无效）。
-  待用户把设备插入/开启 USB 调试后：安装命令见 android/README.md；
-  计划：install --no-streaming → adb reverse → 连接模拟器 快速回归 HTTP 联动；
-  串口链路需真实 ESP32 + OTG 才能实测（README 已写步骤）。
+- 新测试机**始终无法被 adb 识别**（用户反馈：该手机固有问题，USB 调试授权
+  后 Windows 端仍无设备，此前旧机可正常识别）。已换回原测试机可用环境前，
+  安装/验证留给用户按 android/README.md 步骤执行（一句话命令已完成记录）。
+- GitHub 推送：**已完成**（`bf35eed..7da944d`, 2026-09-09 11:59+ 用户完成凭据授权，
+  本会话直接 push 成功；凭据已存入系统，后续 `git push` 无需再交互）。
+  helper 为 `scripts/push_github.ps1`（留档可复用）。
 
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
