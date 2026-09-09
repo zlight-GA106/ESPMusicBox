@@ -218,6 +218,18 @@ APK：`android/app/build/outputs/apk/debug/app-debug.apk`（9.5 MB）。
   同时支持未来 tag push v* 全自动。此路径已写入 release 说明。
 - 结果：release 资产 = [PC 工具 zip, 安卓 APK]（均验证上传成功），固件一键工作流就绪。
 
+## 里程碑 M5：串口页 UI 修复 + 软件图标替换（扳手）
+
+- **竖条**：串口页「连接测试与音频诊断」三个按钮挤在一行，第三个按钮
+  「测试音 3s/16bit」被压成细长空竖条（文字溢出不可见）。→ 改用
+  `FlowRow`（ExpeimentalLayoutApi）自动换行，真机截图确认竖条消失、按钮正常。
+- **图标**：用户提供桌面截图 `C:\Users\zlihome\Desktop\屏幕截图 2026-09-09 201143.png`
+  （395×377 白底 WORKPRO 扳手）。PIL 放大至满宽 1010/1024 白底正方形 →
+  `res/drawable-nodpi/ic_launcher_wrench.png`，manifest icon 指向该 drawable
+  （弃用机器人 adaptive icon）。首版 850 缩放偏小，真机目测后重生成 1010 版，
+  桌面圆形遮罩内扳手饱满可见（截图确认）。
+- Release：APK 资产已删除旧版重新上传（10,059,211 B），PC 工具 zip 不受影响。
+
 
 - `git push origin main` 在本机会话挂起（HTTPS 需要 Windows Credential Manager 交互，
   已用 GIT_TERMINAL_PROMPT=0 限制，超时终止）；**本地提交完整**，push 属于用户手动动作。
